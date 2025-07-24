@@ -1,0 +1,26 @@
+// job-app-automator/client/src/App.tsx
+import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
+import DashboardPage from './pages/DashboardPage';
+import ProfilePage from './pages/ProfilePage';
+import './App.css';
+
+function App() {
+  return (
+    <Router>
+      <div>
+        <nav style={{ padding: '1rem', background: '#eee' }}>
+          <Link to="/" style={{ marginRight: '1rem' }}>Dashboard</Link>
+          <Link to="/profile">Profile</Link>
+        </nav>
+        <main style={{ padding: '1rem' }}>
+          <Routes>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
+  );
+}
+
+export default App;
