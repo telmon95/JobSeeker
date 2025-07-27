@@ -1,25 +1,29 @@
+// job-app-automator/server/src/index.ts
+
+// THIS IS THE FIX. Load environment variables BEFORE any other code runs.
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
 import cors from 'cors';
 import authRoutes from './routes/authRoutes';
-
-// Load environment variables
-dotenv.config();
+import userRoutes from './routes/userRoutes';
+import jobRoutes from './routes/jobRoutes';
+import applicationRoutes from './routes/applicationRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 5001;
 
 // Global Middleware
-app.use(cors()); // Allow requests from the frontend
-app.use(express.json()); // Allow server to accept JSON in request body
-app.use('/uploads', express.static('uploads')); // Serve uploaded files
+app.use(cors());
+app.use(express.json());
+app.use('/uploads', express.static('uploads'));
 
 // MongoDB Connection
 const mongoURI = process.env.MONGO_URI;
 if (!mongoURI) {
-  console.error("FATAL ERROR: MONGO_URI is not defined in .env file.");
-  process.exit(1);
+  throw new Error("FATAL ERROR: MONGO_URI is not defined in .env file.");
 }
 
 mongoose.connect(mongoURI)
@@ -31,7 +35,9 @@ mongoose.connect(mongoURI)
 
 // --- API Routes ---
 app.use('/api/auth', authRoutes);
-// We will add actual routes later.
+app.use('/api/users', userRoutes);
+app.use('/api/jobs', jobRoutes);
+app.use('/api/applications', applicationRoutes);
 
 // Health Check Route
 app.get('/api/health', (req, res) => {

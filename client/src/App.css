@@ -1,26 +1,184 @@
-// job-app-automator/client/src/App.tsx
-import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
-import DashboardPage from './pages/DashboardPage';
-import ProfilePage from './pages/ProfilePage';
-import './App.css';
+/* job-app-automator/client/src/App.css */
 
-function App() {
-  return (
-    <Router>
-      <div>
-        <nav style={{ padding: '1rem', background: '#eee' }}>
-          <Link to="/" style={{ marginRight: '1rem' }}>Dashboard</Link>
-          <Link to="/profile">Profile</Link>
-        </nav>
-        <main style={{ padding: '1rem' }}>
-          <Routes>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-          </Routes>
-        </main>
-      </div>
-    </Router>
-  );
+/* === GLOBAL STYLES & VARIABLES === */
+:root {
+  --primary-color: #4a90e2; /* A modern blue */
+  --primary-hover-color: #357ABD;
+  --background-color: #f4f7f6;
+  --surface-color: #ffffff;
+  --text-color: #333;
+  --text-secondary-color: #666;
+  --border-color: #e0e0e0;
+  --error-color: #d32f2f;
+  --success-color: #388e3c;
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    Helvetica, Arial, sans-serif;
 }
 
-export default App;
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  background-color: var(--background-color);
+  color: var(--text-color);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+main {
+  flex-grow: 1;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+h1, h2 {
+  color: var(--text-color);
+  margin-top: 0;
+}
+
+p {
+  line-height: 1.6;
+}
+
+/* === NAVIGATION BAR === */
+nav {
+  display: flex;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: var(--surface-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid var(--border-color);
+}
+
+nav a {
+  color: var(--text-secondary-color);
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+nav a:hover {
+  color: var(--primary-color);
+  background-color: #eef5ff;
+}
+
+nav a.active { /* This class can be used with NavLink for active styling */
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+/* === FORMS & INPUTS === */
+form {
+  background: var(--surface-color);
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  max-width: 450px;
+  margin-top: 2rem;
+}
+
+form > div {
+  margin-bottom: 1.25rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--text-secondary-color);
+}
+
+input[type='email'],
+input[type='password'],
+input[type='text'],
+input[type='file'] {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: var(--font-family);
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input[type='file'] {
+  padding: 0.5rem;
+}
+
+input[type='file']::file-selector-button {
+  margin-right: 1rem;
+  border: none;
+  background: var(--primary-color);
+  padding: 0.6rem 1rem;
+  border-radius: 4px;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+input[type='file']::file-selector-button:hover {
+  background: var(--primary-hover-color);
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+}
+
+/* === BUTTONS === */
+button {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  font-family: var(--font-family);
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  background-color: var(--primary-color);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+button:hover {
+  background-color: var(--primary-hover-color);
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+/* Specific button for logout in nav */
+nav button {
+  width: auto;
+  padding: 0.5rem 1.2rem;
+  background-color: transparent;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+}
+
+nav button:hover {
+  background-color: var(--primary-color);
+  color: #fff;
+}
+
+/* === UTILITY CLASSES === */
+.error-message {
+  color: var(--error-color);
+  font-size: 0.9rem;
+  margin-top: 1rem;
+  text-align: center;
+}
