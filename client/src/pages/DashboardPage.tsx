@@ -1,4 +1,3 @@
-// job-app-automator/client/src/pages/DashboardPage.tsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -17,10 +16,10 @@ const DashboardPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isScraping, setIsScraping] = useState(false);
   const [error, setError] = useState('');
-
   const [selectedJob, setSelectedJob] = useState<IJob | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedLetter, setGeneratedLetter] = useState('');
+  const [isApplying, setIsApplying] = useState(false);
 
   const fetchJobs = async () => {
     setIsLoading(true);
@@ -57,23 +56,39 @@ const DashboardPage: React.FC = () => {
 
   const handleGenerateLetter = async (job: IJob) => {
     if (!user?.parsedCV) {
-        alert("Please upload your CV on the Profile page before generating a cover letter.");
+        alert("Please upload your CV on the Profile page first.");
         return;
     }
-    
     setSelectedJob(job);
     setIsGenerating(true);
     setGeneratedLetter('');
-    setError('');
-
     try {
         const config = { headers: { Authorization: `Bearer ${token}` } };
         const response = await axios.post('/api/applications/generate-letter', { jobId: job._id }, config);
         setGeneratedLetter(response.data.coverLetter);
     } catch (err: any) {
-        setError(err.response?.data?.message || "Failed to generate cover letter.");
+        setError(err.response?.data?.message || "Failed to generate letter.");
     } finally {
         setIsGenerating(false);
+    }
+  };
+
+  const handleAutoApply = async (job: IJob) => {
+    if (!window.confirm(`Are you sure you want to attempt to automatically apply to ${job.title} at ${job.company}? This process is experimental.`)) {
+      return;
+    }
+    setSelectedJob(job);
+    setIsApplying(true);
+    setError('');
+    try {
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const response = await axios.post('/api/applications/auto-apply', { jobId: job._id }, config);
+        alert(response.data.message);
+    } catch (err: any) {
+        alert(err.response?.data?.message || "An error occurred during the auto-apply process.");
+    } finally {
+        setIsApplying(false);
+        setSelectedJob(null);
     }
   };
 
@@ -87,11 +102,8 @@ const DashboardPage: React.FC = () => {
       </div>
       <p>Click the button to find new job postings. The results will appear below.</p>
       {error && <p className="error-message">{error}</p>}
-
       <div className="job-list" style={{ marginTop: '2rem' }}>
-        {isLoading ? (
-          <p>Loading jobs...</p>
-        ) : jobs.length > 0 ? (
+        {isLoading ? ( <p>Loading...</p> ) : jobs.length > 0 ? (
           jobs.map(job => (
             <div key={job._id} className="job-card">
               <div>
@@ -99,23 +111,30 @@ const DashboardPage: React.FC = () => {
                 <p className="company">{job.company}</p>
                 <p className="location">{job.location}</p>
               </div>
-              <button
-                className="generate-button"
-                onClick={() => handleGenerateLetter(job)}
-                disabled={isGenerating && selectedJob?._id === job._id}
-              >
-                {isGenerating && selectedJob?._id === job._id ? 'Generating...' : 'Generate Letter'}
-              </button>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  className="generate-button"
+                  onClick={() => handleGenerateLetter(job)}
+                  disabled={isGenerating && selectedJob?._id === job._id}
+                >
+                  {isGenerating && selectedJob?._id === job._id ? '...' : 'Generate Letter'}
+                </button>
+                <button
+                  onClick={() => handleAutoApply(job)}
+                  disabled={isApplying && selectedJob?._id === job._id}
+                >
+                  {isApplying && selectedJob?._id === job._id ? 'Applying...' : 'Auto-Apply'}
+                </button>
+              </div>
             </div>
           ))
-        ) : (
+        ) : ( 
           <div style={{textAlign: 'center', padding: '3rem', background: '#fff', borderRadius: '8px'}}>
             <h3>No Jobs Found</h3>
             <p>Click "Find New Jobs" to start your search!</p>
           </div>
         )}
       </div>
-
       {/* Cover Letter Modal */}
       {selectedJob && (
         <div className="modal-backdrop" onClick={() => setSelectedJob(null)}>
