@@ -13,6 +13,9 @@
   "author": "",
   "license": "ISC",
   "description": "",
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "@llamaindex/llama-cloud": "^2.9.0",
     "axios": "^1.11.0",
@@ -24,8 +27,7 @@
     "mongoose": "^8.16.4",
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
-    "openai": "^5.10.2",
-    "puppeteer": "^24.15.0"
+    "openai": "^5.10.2"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

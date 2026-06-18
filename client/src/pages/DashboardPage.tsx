@@ -342,8 +342,11 @@ const DashboardPage: React.FC = () => {
       <div className="page-header dashboard-hero">
         <div>
           <p className="dashboard-hero__eyebrow">Careers at JobSeeker</p>
-          <h1 className="gradient-heading">Find roles matched to your CV.</h1>
-          <p className="dashboard-hero__sub">Upload your resume, search live listings, and apply with confidence.</p>
+          <h1 className="gradient-heading">Find opportunities matched to your skills.</h1>
+          <p className="dashboard-hero__sub">
+            Upload your CV, discover relevant jobs, and apply with confidence using AI-powered
+            career matching.
+          </p>
           {hasCV && (
             <button
               type="button"
@@ -351,7 +354,7 @@ const DashboardPage: React.FC = () => {
               onClick={() => handleScrape()}
               disabled={isScraping || isLoading}
             >
-              {isScraping ? 'Searching…' : 'View openings'}
+              {isScraping ? 'Searching…' : 'Browse Jobs'}
             </button>
           )}
         </div>
