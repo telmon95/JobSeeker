@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://jobseeker-api.onrender.com/api/$1"
+      "destination": "https://jobseeker-c8tp.onrender.com/api/$1"
     }
   ]
 }
