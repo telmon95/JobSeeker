@@ -4,6 +4,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+import dns from 'dns';
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
@@ -11,6 +12,7 @@ import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import jobRoutes from './routes/jobRoutes';
 import applicationRoutes from './routes/applicationRoutes';
+import statsRoutes from './routes/statsRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -26,6 +28,9 @@ if (!mongoURI) {
   throw new Error("FATAL ERROR: MONGO_URI is not defined in .env file.");
 }
 
+// Some routers fail to resolve MongoDB Atlas SRV records; public DNS is more reliable.
+dns.setServers(['8.8.8.8', '1.1.1.1']);
+
 mongoose.connect(mongoURI)
   .then(() => console.log("✅ MongoDB connected successfully."))
   .catch(err => {
@@ -38,6 +43,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/applications', applicationRoutes);
+app.use('/api/stats', statsRoutes);
 
 // Health Check Route
 app.get('/api/health', (req, res) => {

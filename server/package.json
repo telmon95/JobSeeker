@@ -6,13 +6,15 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "audit:match": "ts-node scripts/matchAudit.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@llamaindex/llama-cloud": "^2.9.0",
     "axios": "^1.11.0",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
@@ -23,8 +25,7 @@
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
     "openai": "^5.10.2",
-    "puppeteer": "^24.15.0",
-    "simple-resume-parser": "^1.1.8"
+    "puppeteer": "^24.15.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

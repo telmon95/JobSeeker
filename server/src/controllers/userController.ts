@@ -1,60 +1,103 @@
-// job-app-automator/server/src/controllers/userController.ts
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/authMiddleware';
-import { User } from '../models/User';
 import fs from 'fs';
+import path from 'path';
+import { parseCvFile, SUPPORTED_CV_EXTENSIONS } from '../services/cvParseService';
+import {
+  findUserByIdSafe,
+  saveUserCv,
+  updateUserPreferences,
+  UserPreferencesUpdate,
+} from '../services/userService';
 
-const ResumeParser = require('simple-resume-parser');
+function getErrorMessage(error: unknown): string {
+  const msg = error instanceof Error ? error.message : String(error);
+
+  if (msg.includes('LLAMA_CLOUD_API_KEY')) {
+    return 'LlamaParse is not configured. Add LLAMA_CLOUD_API_KEY to your .env file.';
+  }
+  if (/Unsupported CV format/i.test(msg)) {
+    return msg;
+  }
+  if (/LlamaParse|invalid.*key/i.test(msg)) {
+    return msg;
+  }
+  if (msg.includes('LlamaParse returned no content') || msg.includes('Could not extract readable text')) {
+    return 'Could not read text from this file. Try exporting your CV as PDF or DOCX with selectable text.';
+  }
+  if (msg.includes('empty')) {
+    return 'This file appears empty. Please upload a CV with readable content.';
+  }
+  return msg || `Failed to parse CV. Supported formats: ${SUPPORTED_CV_EXTENSIONS.join(', ')}`;
+}
+
+export const getCurrentUser = async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await findUserByIdSafe(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    res.status(200).json(user);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ message: 'Server error fetching profile.', error: message });
+  }
+};
+
+export const updatePreferences = async (req: AuthRequest, res: Response) => {
+  try {
+    const body = req.body as UserPreferencesUpdate;
+    const user = await updateUserPreferences(req.user._id, body);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    res.status(200).json({ message: 'Preferences saved.', user });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ message: 'Failed to save preferences.', error: message });
+  }
+};
 
 export const uploadCv = async (req: AuthRequest, res: Response) => {
-  console.log('--- BACKEND: CV UPLOAD PROCESS STARTED ---');
   const filePath = req.file?.path;
   if (!filePath) {
-    console.log('--- BACKEND ERROR: No file path received.');
-    return res.status(400).json({ message: 'File upload failed. Please try again.' });
+    return res.status(400).json({
+      message: `No file received. Supported formats: ${SUPPORTED_CV_EXTENSIONS.join(', ')}`,
+    });
   }
-  console.log(`--- BACKEND: File received at path: ${filePath}`);
+
+  const ext = path.extname(req.file?.originalname || '').toLowerCase();
 
   try {
-    const resume = new ResumeParser(filePath);
+    console.log(`CV upload started for user ${req.user._id}: ${req.file?.originalname} (${ext})`);
+    const parsedProfile = await parseCvFile(filePath, req.file?.originalname);
+    console.log(
+      `Profile structured — name: ${parsedProfile.name}, skills: ${parsedProfile.skills?.length || 0}`
+    );
 
-    resume.parseToJSON()
-      .then(async (parsedData: any) => {
-        // ✅ DEBUG LOG 1: See if the parser actually worked.
-        console.log('--- BACKEND: CV parsing successful. Parsed data name:', parsedData.name);
+    const updatedUser = await saveUserCv(req.user._id, parsedProfile, {
+      originalFileName: req.file?.originalname,
+      format: ext.replace('.', ''),
+    });
 
-        const updatedUser = await User.findByIdAndUpdate(
-          req.user._id,
-          { parsedCV: parsedData },
-          { new: true } // This is crucial to get the *new* document back
-        ).select('-password');
-        
-        // ✅ DEBUG LOG 2: Check if the user object returned from the database has the CV data.
-        console.log('--- BACKEND: User updated in DB. Does the returned user have a CV? ' + (updatedUser?.parsedCV ? 'YES' : 'NO'));
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'Authenticated user not found.' });
+    }
 
-        if (!updatedUser) {
-            console.log('--- BACKEND ERROR: User not found after update attempt.');
-            return res.status(404).json({ message: 'Authenticated user not found.' });
-        }
+    fs.unlink(filePath, (err) => {
+      if (err) console.error('Error deleting temporary CV file:', err);
+    });
 
-        fs.unlink(filePath, (err) => {
-          if (err) console.error('Error deleting temporary CV file:', err);
-        });
-        
-        // ✅ DEBUG LOG 3: Confirm we are sending the user back.
-        console.log('--- BACKEND: Sending updated user object back to frontend.');
-        res.status(200).json({
-          message: 'CV uploaded and parsed successfully!',
-          user: updatedUser,
-        });
-      })
-      .catch((error: any) => {
-        console.error('--- BACKEND ERROR: Error from parseToJSON library ---', error);
-        res.status(500).json({ message: 'The parser library failed.', error: error.message });
-      });
+    res.status(200).json({
+      message: 'CV uploaded and parsed successfully!',
+      user: updatedUser,
+    });
+  } catch (error: unknown) {
+    console.error('CV parsing error:', error);
+    fs.unlink(filePath, () => {});
 
-  } catch (error: any) {
-    console.error('--- BACKEND ERROR: Critical error in try/catch block ---', error);
-    res.status(500).json({ message: 'Server error while setting up parser.', error: error.message });
+    const message = getErrorMessage(error);
+    const detail = error instanceof Error ? error.message : String(error);
+    res.status(500).json({ message, error: detail });
   }
 };

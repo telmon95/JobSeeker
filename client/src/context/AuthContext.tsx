@@ -1,19 +1,16 @@
-// job-app-automator/client/src/context/AuthContext.tsx
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import type { ReactNode } from 'react';
 import axios from 'axios';
 
-interface User {
-  _id: string;
-  email: string;
-  parsedCV?: any;
-}
+import type { UserProfile } from '../types/api';
 
 interface AuthContextType {
-  user: User | null;
+  user: UserProfile | null;
   token: string | null;
-  login: (data: { user: User; token: string }) => void;
+  login: (data: { user: UserProfile; token: string }) => void;
   logout: () => void;
-  updateUserProfile: (updatedUser: User) => void;
+  updateUserProfile: (updatedUser: UserProfile) => void;
+  refreshUser: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -24,30 +21,57 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
+  const refreshUser = useCallback(async () => {
+    const storedToken = token || localStorage.getItem('token');
+    if (!storedToken) return;
+
     try {
-      const storedToken = localStorage.getItem('token');
-      const storedUserString = localStorage.getItem('user');
-      if (storedToken && storedUserString) {
-        const storedUser = JSON.parse(storedUserString);
-        setToken(storedToken);
-        setUser(storedUser);
-        axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
-      }
-    } catch (error) {
-      console.error("Failed to parse user data from localStorage", error);
-      localStorage.removeItem('user');
-      localStorage.removeItem('token');
-    } finally {
-      setIsLoading(false);
+      const { data } = await axios.get('/api/users/me', {
+        headers: { Authorization: `Bearer ${storedToken}` },
+      });
+      setUser(data);
+      localStorage.setItem('user', JSON.stringify(data));
+    } catch {
+      // Keep cached user if refresh fails
     }
+  }, [token]);
+
+  useEffect(() => {
+    const bootstrap = async () => {
+      try {
+        const storedToken = localStorage.getItem('token');
+        const storedUserString = localStorage.getItem('user');
+        if (storedToken && storedUserString) {
+          const storedUser = JSON.parse(storedUserString);
+          setToken(storedToken);
+          setUser(storedUser);
+          axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+          try {
+            const { data } = await axios.get('/api/users/me', {
+              headers: { Authorization: `Bearer ${storedToken}` },
+            });
+            setUser(data);
+            localStorage.setItem('user', JSON.stringify(data));
+          } catch {
+            // use cached user
+          }
+        }
+      } catch (error) {
+        console.error('Failed to parse user data from localStorage', error);
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    bootstrap();
   }, []);
 
-  const login = (data: { user: User; token: string }) => {
+  const login = (data: { user: UserProfile; token: string }) => {
     localStorage.setItem('user', JSON.stringify(data.user));
     localStorage.setItem('token', data.token);
     setUser(data.user);
@@ -62,20 +86,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setToken(null);
     delete axios.defaults.headers.common['Authorization'];
   };
-  
-  // ✅ THIS IS THE FINAL, CORRECTED LOGIC
-  const updateUserProfile = (updatedUser: User) => {
-    // We create a brand new object to guarantee React sees a state change.
-    // We safely copy the previous state and then merge the new user data.
-    setUser(prevUser => {
+
+  const updateUserProfile = (updatedUser: UserProfile) => {
+    setUser((prevUser) => {
       const newUser = { ...prevUser, ...updatedUser };
-      // Also update localStorage with this guaranteed new object.
       localStorage.setItem('user', JSON.stringify(newUser));
-      return newUser as User;
+      return newUser as UserProfile;
     });
   };
 
-  const value = { user, token, login, logout, updateUserProfile, isLoading };
+  const value = { user, token, login, logout, updateUserProfile, refreshUser, isLoading };
 
   return (
     <AuthContext.Provider value={value}>

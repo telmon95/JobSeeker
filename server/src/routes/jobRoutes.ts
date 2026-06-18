@@ -1,14 +1,16 @@
-// job-app-automator/server/src/routes/jobRoutes.ts
 import { Router } from 'express';
-import { getJobs, triggerScraping } from '../controllers/jobController';
+import { getJobs, getJobById, getJobFilters, getScrapeConfig, runJobPipeline, triggerScraping } from '../controllers/jobController';
 import { protect } from '../middleware/authMiddleware';
 
 const router = Router();
 
-// All routes in this file are protected
 router.use(protect);
 
 router.get('/', getJobs);
+router.get('/filters', getJobFilters);
+router.get('/scrape/config', getScrapeConfig);
 router.post('/scrape', triggerScraping);
+router.post('/pipeline', runJobPipeline);
+router.get('/:id', getJobById);
 
 export default router;

@@ -1,6 +1,6 @@
 // job-app-automator/server/src/routes/authRoutes.ts
 import { Router } from 'express';
-import { registerUser, loginUser } from '../controllers/authController';
+import { registerUser, loginUser, resetPassword } from '../controllers/authController';
 
 const router = Router();
 
@@ -11,5 +11,9 @@ router.post('/register', registerUser);
 // @route   POST /api/auth/login
 // @desc    Authenticate user and get token
 router.post('/login', loginUser);
+
+// @route   POST /api/auth/reset-password
+// @desc    Reset password for an existing user
+router.post('/reset-password', resetPassword);
 
 export default router;

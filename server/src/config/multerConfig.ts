@@ -1,36 +1,58 @@
-// job-app-automator/server/src/config/multerConfig.ts
 import multer from 'multer';
 import path from 'path';
 
-// Set up storage engine
 const storage = multer.diskStorage({
   destination: './uploads/',
-  filename: function (req, file, cb) {
-    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
+  filename: (_req, file, cb) => {
+    cb(null, `cv-${Date.now()}${path.extname(file.originalname).toLowerCase()}`);
   },
 });
 
-// Initialize upload variable
-export const upload = multer({
-  storage: storage,
-  limits: { fileSize: 5000000 }, // Limit file size to 5MB
-  fileFilter: function (req, file, cb) {
-    checkFileType(file, cb);
-  },
-});
+const ALLOWED_EXTENSIONS = /\.(pdf|docx?|odt|rtf|txt|md|csv|jpe?g|png|webp|heic)$/i;
 
-// Check File Type
-function checkFileType(file: Express.Multer.File, cb: multer.FileFilterCallback) {
-  // Allowed extensions
-  const filetypes = /jpeg|jpg|png|pdf|doc|docx/;
-  // Check extension
-  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-  // Check mime type
-  const mimetype = filetypes.test(file.mimetype);
+const MIME_MAP: Record<string, RegExp> = {
+  '.pdf': /pdf/,
+  '.doc': /msword|word/,
+  '.docx': /wordprocessingml|officedocument/,
+  '.odt': /opendocument|oasis/,
+  '.rtf': /rtf|plain/,
+  '.txt': /text\/plain/,
+  '.md': /text\/(plain|markdown)/,
+  '.csv': /text\/(plain|csv)/,
+  '.jpg': /jpeg/,
+  '.jpeg': /jpeg/,
+  '.png': /png/,
+  '.webp': /webp/,
+  '.heic': /heic|heif/,
+};
 
-  if (mimetype && extname) {
-    return cb(null, true);
-  } else {
-    cb(new Error('Error: PDFs, Docs, and Images Only!'));
+function checkFileType(
+  _req: Express.Request,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback
+) {
+  const ext = path.extname(file.originalname).toLowerCase();
+
+  if (!ALLOWED_EXTENSIONS.test(ext)) {
+    return cb(
+      new Error(
+        'Unsupported format. Upload PDF, Word (.doc/.docx), ODT, RTF, TXT, MD, or image (JPG/PNG).'
+      )
+    );
   }
+
+  const mimePattern = MIME_MAP[ext];
+  if (mimePattern && !mimePattern.test(file.mimetype)) {
+    if (file.mimetype !== 'application/octet-stream') {
+      return cb(new Error(`Invalid file type for ${ext}. Please upload a valid document.`));
+    }
+  }
+
+  cb(null, true);
 }
+
+export const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: checkFileType,
+});

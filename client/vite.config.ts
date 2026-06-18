@@ -8,12 +8,13 @@ export default defineConfig({
   server: {
     port: 3000, // Run frontend on port 3000
     proxy: {
-      // Proxy requests from /api to your backend server
       '/api': {
-        target: 'http://localhost:5001', // Your backend server port
+        target: 'http://localhost:5001',
         changeOrigin: true,
         secure: false,
-      }
-    }
+        timeout: 180000,
+        proxyTimeout: 180000,
+      },
+    },
   }
 })
